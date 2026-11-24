@@ -1,0 +1,56 @@
+# Spam Message Detection
+
+A text-classification project that compares Multinomial Naive Bayes and Linear SVM for separating spam from legitimate (`ham`) messages. The pipeline tokenizes and stems text, removes English stop words, and converts messages to TF-IDF features.
+
+> **Dataset note:** The default UCI corpus contains SMS messages, not email. For email-specific filtering, train on a representative, labeled email dataset. This project is educational and does not guarantee phishing detection.
+
+## Features
+
+- Downloads the UCI SMS Spam Collection by default.
+- Supports a local CSV with `label` and `message` columns.
+- Applies tokenization, stop-word removal, stemming, and TF-IDF.
+- Evaluates Naive Bayes and Linear SVM with accuracy, per-class precision/recall, and a confusion matrix.
+- Saves trained models for classifying new messages.
+
+## Project structure
+
+```text
+spam-detection/
+├── requirements.txt
+├── src/
+│   ├── train_model.py
+│   └── predict.py
+└── outputs/                 # created by training
+```
+
+## Setup and run
+
+```bash
+py -m venv .venv
+# Windows PowerShell:
+.\.venv\Scripts\Activate.ps1
+# macOS/Linux:
+source .venv/bin/activate
+pip install -r requirements.txt
+python src/train_model.py
+```
+
+Classify a message:
+
+```bash
+python src/predict.py --text "Claim your free prize now!"
+python src/predict.py --text "Are we still meeting today?" --model "Naive Bayes"
+```
+
+Train with your own labeled dataset:
+
+```bash
+python src/train_model.py --data path/to/messages.csv
+```
+
+The training command saves models to `outputs/spam_models.joblib`. Review messages before acting on a model's classification; false positives and missed spam are possible.
+
+## Dataset and references
+
+- [UCI SMS Spam Collection](https://archive.ics.uci.edu/dataset/228/sms)
+- [scikit-learn text feature extraction](https://scikit-learn.org/stable/modules/feature_extraction.html#text-feature-extraction)

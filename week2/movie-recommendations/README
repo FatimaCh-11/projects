@@ -1,0 +1,50 @@
+# Movie Recommendation System
+
+A recommendation-system project that creates personalized movie suggestions using two approaches: content-based filtering from genres and tags, and collaborative filtering from user ratings. Both methods use cosine similarity or rating patterns to rank movies.
+
+## Features
+
+- Downloads the MovieLens Latest Small dataset on first run.
+- Builds content profiles from movie genres and user-applied tags.
+- Recommends movies from similar users' rating patterns.
+- Finds movies with similar genre/tag content to a selected title.
+- Lets you choose content-based, collaborative, or both recommendation methods.
+
+## Project structure
+
+```text
+movie-recommendations/
+├── requirements.txt
+├── src/
+│   └── recommend.py
+└── data/                    
+```
+
+## Setup and run
+
+```bash
+py -m venv .venv
+# Windows PowerShell:
+.\.venv\Scripts\Activate.ps1
+
+pip install -r requirements.txt
+python src/recommend.py --user-id 1 --method both
+![ss of its output](image-2.png)
+```
+
+Get one recommendation type or find similar movies:
+
+```bash
+python src/recommend.py --user-id 1 --method content
+python src/recommend.py --user-id 1 --method collaborative
+![ss ](image-1.png)
+python src/recommend.py --similar-to "Toy Story" --limit 10
+![ss](image.png)
+```
+
+The MovieLens dataset includes ratings, genres, and tags, but no plot summaries. User IDs refer to the dataset's rating records. Recommendations are demonstrations and may not reflect an individual viewer's current interests.
+
+## Dataset and references
+
+- [GroupLens MovieLens datasets](https://grouplens.org/datasets/movielens/latest/)
+- [scikit-learn cosine similarity](https://scikit-learn.org/stable/modules/metrics.html#cosine-similarity)

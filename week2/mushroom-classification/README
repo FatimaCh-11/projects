@@ -1,0 +1,55 @@
+# Mushroom Classification
+
+An educational classification project that compares Decision Tree and Random Forest models on the UCI Mushroom dataset. It uses mushroom characteristics to classify records as edible (`e`) or poisonous (`p`) and reports poisonous-class sensitivity alongside other test metrics.
+
+> **Safety:** This is a machine-learning exercise, not a mushroom identification or food-safety tool. Never use its predictions to decide whether a mushroom is safe to eat.
+
+## Features
+
+- Downloads the UCI Mushroom dataset for training.
+- One-hot encodes categorical features and imputes missing values.
+- Compares Decision Tree and Random Forest classifiers.
+- Calibrates a threshold on validation data to target full poisonous-class sensitivity, then reports performance on a separate test set.
+- Supports predictions from a CSV containing the dataset's 22 feature columns.
+
+## Project structure
+
+```text
+mushroom-classification/
+├── requirements.txt
+├── src/
+│   ├── train_model.py
+│   └── predict.py
+└── outputs/                 # created by training
+```
+
+## Setup and run
+
+```bash
+py -m venv .venv
+# Windows PowerShell:
+.\.venv\Scripts\Activate.ps1
+# macOS/Linux:
+source .venv/bin/activate
+pip install -r requirements.txt
+python src/train_model.py
+```
+
+Classify a CSV of mushroom features:
+
+```bash
+python src/predict.py --input path/to/mushroom_features.csv
+```
+
+Use the Decision Tree model:
+
+```bash
+python src/predict.py --input path/to/mushroom_features.csv --model "Decision Tree"
+```
+
+Training saves `outputs/mushroom_models.joblib`. The dataset groups mushrooms of unknown edibility with poisonous examples. A validation sensitivity target does not guarantee the same result on unseen data or real mushrooms.
+
+## Dataset and references
+
+- [UCI Mushroom dataset](https://archive.ics.uci.edu/dataset/73/mushroom)
+- [scikit-learn multiclass classification](https://scikit-learn.org/stable/modules/multiclass.html)

@@ -1,0 +1,62 @@
+# Fingerprint Feature Classification Research
+
+An educational research scaffold for comparing KNN, Random Forest, and SVM classifiers on fingerprint-derived measurements and laboratory-confirmed blood-group labels. It uses participant-level train, validation, and test splits to reduce participant leakage.
+
+> **Research limitation:** Fingerprint patterns are not a validated method for determining blood group. This prototype must not be used for diagnosis, emergency triage, transfusion, or any healthcare decision. Blood groups must be established through appropriate laboratory testing. Findings on associations between fingerprints and blood groups are inconsistent.
+
+## Features
+
+- Accepts a consented, researcher-approved CSV dataset.
+- Handles numeric and categorical measurements with imputation and preprocessing.
+- Compares KNN, Random Forest, and SVM using validation balanced accuracy.
+- Reports classification metrics on held-out participants.
+- Saves the selected model for an experimental batch prediction.
+
+## Data format
+
+Place `data/fingerprint_data.csv` in the project. Include one row per participant, a unique `participant_id`, a laboratory-confirmed `blood_group` target, and measured feature columns. Example header:
+
+```text
+participant_id,blood_group,loop_count,whorl_count,arch_count,total_ridge_count
+```
+
+Do not include names or other direct identifiers. The repository does not provide or fabricate biometric data.
+
+## Project structure
+
+```text
+fingerprint-bloodgroup-research/
+├── requirements.txt
+├── data/
+│   └── fingerprint_data.csv
+├── src/
+│   ├── train_model.py
+│   └── predict.py
+└── outputs/                 # created by training
+```
+
+## Setup and run
+
+```bash
+py -m venv .venv
+# Windows PowerShell:
+.\.venv\Scripts\Activate.ps1
+# macOS/Linux:
+source .venv/bin/activate
+pip install -r requirements.txt
+python src/train_model.py
+```
+
+Run experimental predictions on a CSV with the same feature columns:
+
+```bash
+python src/predict.py --input data/new_fingerprint_features.csv
+```
+
+Training saves `outputs/fingerprint_research_model.joblib`. Model metrics describe only the supplied study dataset and do not establish clinical validity.
+
+## References
+
+- [scikit-learn multiclass classification](https://scikit-learn.org/stable/modules/multiclass.html)
+- [Study reporting no significant fingerprint–blood-group association](https://pubmed.ncbi.nlm.nih.gov/29453474/)
+- [WHO blood transfusion guidance](https://iris.who.int/bitstream/handle/10665/42396/a72894.pdf)
