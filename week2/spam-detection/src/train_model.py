@@ -1,16 +1,16 @@
-"""Train and compare spam classifiers on message text."""
+"""Train and compare spam classifiers using the UCI SMS Spam Collection."""
 
 import argparse
+import io
 import re
+import zipfile
 from pathlib import Path
+from urllib.request import urlopen
 
 import joblib
 import pandas as pd
 from nltk.stem import PorterStemmer
-from sklearn.feature_extraction.text import (
-    ENGLISH_STOP_WORDS,
-    TfidfVectorizer,
-)
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS, TfidfVectorizer
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
@@ -20,46 +20,56 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
-from ucimlrepo import fetch_ucirepo
 
 
+DATA_URL = (
+    "https://archive.ics.uci.edu/static/public/"
+    "228/sms%2Bspam%2Bcollection.zip"
+)
 OUTPUT_DIR = Path("outputs")
 STOP_WORDS = set(ENGLISH_STOP_WORDS)
 STEMMER = PorterStemmer()
 
 
 def tokenize_and_stem(text):
-    """Lowercase, tokenize, remove stop words, and stem a message."""
     words = re.findall(r"(?u)\b[a-zA-Z][a-zA-Z']+\b", str(text).lower())
-    return [
-        STEMMER.stem(word)
-        for word in words
-        if word not in STOP_WORDS
-    ]
+    return [STEMMER.stem(word) for word in words if word not in STOP_WORDS]
 
 
 def load_data(csv_path=None):
-    """Load UCI SMS data, or a local CSV with label and message columns."""
+    """Read a local CSV, or download and read the UCI ZIP."""
     if csv_path:
         data = pd.read_csv(csv_path)
-        required = {"label", "message"}
-        if not required.issubset(data.columns):
+
+        if not {"label", "message"}.issubset(data.columns):
             raise ValueError(
-                "Local CSV must contain columns named 'label' and 'message'."
+                "Your CSV must have columns named 'label' and 'message'."
             )
-        messages = data["message"].fillna("").astype(str)
-        labels = data["label"].astype(str).str.lower().str.strip()
     else:
-        dataset = fetch_ucirepo(id=228)
-        messages = dataset.data.features.iloc[:, 0].fillna("").astype(str)
-        labels = (
-            dataset.data.targets.iloc[:, 0]
-            .astype(str)
-            .str.lower()
-            .str.strip()
+        print("Downloading the UCI SMS Spam Collection...")
+        with urlopen(DATA_URL, timeout=60) as response:
+            zip_bytes = response.read()
+
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as archive:
+            data_filename = next(
+                name for name in archive.namelist()
+                if Path(name).name == "SMSSpamCollection"
+            )
+            text = archive.read(data_filename).decode(
+                "utf-8",
+                errors="replace",
+            )
+
+        data = pd.read_csv(
+            io.StringIO(text),
+            sep="\t",
+            header=None,
+            names=["label", "message"],
         )
 
-    # Accept common equivalents for the two classes.
+    messages = data["message"].fillna("").astype(str)
+    labels = data["label"].astype(str).str.lower().str.strip()
+
     labels = labels.replace(
         {
             "legitimate": "ham",
@@ -72,7 +82,7 @@ def load_data(csv_path=None):
 
     if not set(labels.unique()).issubset({"ham", "spam"}):
         raise ValueError(
-            "Labels must identify messages as 'ham' or 'spam'. "
+            "Labels must be 'ham' or 'spam'. "
             f"Found: {sorted(labels.unique())}"
         )
 
@@ -80,7 +90,6 @@ def load_data(csv_path=None):
 
 
 def make_pipeline(classifier):
-    """Create a TF-IDF text pipeline followed by a classifier."""
     return Pipeline(
         steps=[
             (
@@ -90,7 +99,6 @@ def make_pipeline(classifier):
                     token_pattern=None,
                     lowercase=False,
                     ngram_range=(1, 2),
-                    min_df=1,
                     max_features=50000,
                 ),
             ),
@@ -104,11 +112,13 @@ def main():
     parser.add_argument(
         "--data",
         type=Path,
-        help="Optional CSV with 'label' and 'message' columns.",
+        help="Optional local CSV with 'label' and 'message' columns.",
     )
     args = parser.parse_args()
 
     messages, labels = load_data(args.data)
+    print(f"Loaded {len(messages)} messages.")
+    print(f"Class counts:\n{labels.value_counts().to_string()}")
 
     x_train, x_test, y_train, y_test = train_test_split(
         messages,
@@ -120,7 +130,10 @@ def main():
 
     models = {
         "Naive Bayes": MultinomialNB(alpha=0.5),
-        "Linear SVM": LinearSVC(class_weight="balanced", random_state=42),
+        "Linear SVM": LinearSVC(
+            class_weight="balanced",
+            random_state=42,
+        ),
     }
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -133,20 +146,22 @@ def main():
 
         print(f"\n{name} — held-out test set")
         print(f"Accuracy: {accuracy_score(y_test, predictions):.3f}")
-        print("Confusion matrix (rows=true [ham, spam], columns=predicted [ham, spam]):")
+        print("Confusion matrix (rows/columns: ham, spam):")
         print(confusion_matrix(y_test, predictions, labels=["ham", "spam"]))
-        print(classification_report(
-            y_test,
-            predictions,
-            labels=["ham", "spam"],
-            zero_division=0,
-        ))
+        print(
+            classification_report(
+                y_test,
+                predictions,
+                labels=["ham", "spam"],
+                zero_division=0,
+            )
+        )
 
         saved_models[name] = model
 
     model_path = OUTPUT_DIR / "spam_models.joblib"
     joblib.dump(saved_models, model_path)
-    print(f"Saved models to {model_path}")
+    print(f"Saved trained models to {model_path}")
 
 
 if __name__ == "__main__":
